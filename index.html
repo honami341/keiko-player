@@ -154,7 +154,7 @@ input[type=range]::-moz-range-thumb {
   top: 10px;
   left: 10px;
   /* 幅：小さめ固定。clampでデバイス差吸収 */
-  width: clamp(200px, 27vw, 320px);
+  width: clamp(300px, 44vw, 500px);
   background: rgba(8,8,10,0.88);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -385,8 +385,9 @@ input[type=range]::-moz-range-thumb {
 })();
 
 var ytPlayer, ytTimer;
-var ytDuration = 0;
-var ytLooping  = false;
+var ytDuration  = 0;
+var ytLooping   = false;
+var ytSeeking   = false;   /* 二重シーク防止フラグ */
 
 function onYouTubeIframeAPIReady() { /* ready */ }
 
@@ -451,7 +452,6 @@ function onYTReady() {
 }
 
 function onYTState(e) {
-  /* PLAYING になったら duration を取得 */
   if (e.data === YT.PlayerState.PLAYING) {
     var d = ytPlayer.getDuration();
     if (d > 0) {
@@ -459,7 +459,23 @@ function onYTState(e) {
       document.getElementById('dur-label').textContent = fmtTime(d);
       updateRegion();
     }
+    ytSeeking = false;   /* 再生開始でフラグ解除 */
   }
+  /* 動画が終了した場合もA点に戻す */
+  if (e.data === YT.PlayerState.ENDED && ytLooping) {
+    doABSeek();
+  }
+}
+
+/* A点へシーク（二重発火防止付き） */
+function doABSeek() {
+  if (ytSeeking) return;
+  ytSeeking = true;
+  var st = parseTime(document.getElementById('start-time').value);
+  ytPlayer.seekTo(st, true);
+  ytPlayer.playVideo();
+  /* 1秒後にフラグ解除（PLAYING イベントでも解除される） */
+  setTimeout(function() { ytSeeking = false; }, 1000);
 }
 
 /* ── AB リピート ── */
@@ -500,17 +516,16 @@ function startYTMonitor() {
     }
 
     /* ABループ判定 */
-    if (!ytLooping || ytDuration <= 0) return;
+    if (!ytLooping || ytDuration <= 0 || ytSeeking) return;
 
     var st    = parseTime(document.getElementById('start-time').value);
     var enRaw = document.getElementById('end-time').value.trim();
     var en    = enRaw ? parseTime(enRaw) : ytDuration;
     if (!en || en > ytDuration) en = ytDuration;
 
-    /* 有効な区間で、終了点を超えたらA点に戻す */
-    if (st < en && cur >= en) {
-      ytPlayer.seekTo(st, true);
-      ytPlayer.playVideo();
+    /* 終了点の0.3秒前から判定（200msポーリングの取りこぼし防止） */
+    if (st < en && cur >= en - 0.3) {
+      doABSeek();
     }
   }, 200);
 }
