@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="稽古プレイヤー">
+<title>稽古プレイヤー</title>
+<style>
+:root {
+  --red:    #ff3b30;
+  --green:  #30d158;
+  --border: rgba(255,255,255,0.09);
+  --ctrl:   rgba(14,14,16,0.97);
+  --dim:    rgba(255,255,255,0.38);
+}
+*, *::before, *::after {
+  box-sizing: border-box; margin: 0; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  height: 100%; height: 100dvh;
+  background: #000; color: #fff;
+  font-family: 'Helvetica Neue', 'Hiragino Sans', system-ui, sans-serif;
+  overflow: hidden;
+}
+
+/* ── アプリ全体：縦2分割 ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%; height: 100dvh;
+}
+
+.panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.panel + .panel { border-top: 2px solid rgba(255,255,255,0.15); }
+
+/* ── ヘッダーバー ── */
+.hbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px;
+  height: 36px;
+  background: var(--ctrl);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 20;
+}
+.hbar-title {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--dim); flex: 1;
+}
+.hbtn {
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: #fff; font-size: 11px; font-weight: 500;
+  font-family: inherit; cursor: pointer;
+  white-space: nowrap; transition: all .15s;
+}
+.hbtn:active { opacity: 0.7; }
+.hbtn.active { background: var(--red); border-color: var(--red); }
+.hbtn.go     { background: var(--green); border-color: var(--green); color: #000; font-weight: 700; }
+.hbtn.stop   { background: #333; border-color: #444; }
+
+/* ── YouTube：設定ドロワー ── */
+.yt-drawer {
+  background: #141416;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px 10px;
+  flex-shrink: 0;
+  display: none;
+}
+.yt-drawer.open { display: block; }
+
+.url-row { display: flex; gap: 7px; margin-bottom: 8px; }
+.url-row input {
+  flex: 1; padding: 7px 10px;
+  background: #232325; border: 1px solid #3a3a3d;
+  border-radius: 7px; color: #fff; font-size: 13px; font-family: inherit;
+  outline: none; min-width: 0;
+}
+.url-row input:focus { border-color: var(--red); }
+.url-row input::placeholder { color: #555; }
+.url-load { padding: 7px 14px; background: var(--red); border: none;
+  border-radius: 7px; color: #fff; font-size: 13px; font-weight: 700;
+  font-family: inherit; cursor: pointer; white-space: nowrap; }
+
+.ab-row { display: flex; align-items: center; gap: 7px; }
+.ab-tag { font-size: 9px; font-weight: 800; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--dim); }
+.ab-input {
+  width: 60px; padding: 6px 8px;
+  background: #232325; border: 1px solid #3a3a3d;
+  border-radius: 7px; color: #fff; font-size: 13px;
+  text-align: center; font-family: inherit; outline: none;
+}
+.ab-input:focus { border-color: var(--red); }
+.ab-sep { color: var(--dim); font-size: 11px; }
+.err { color: #ff7070; font-size: 11px; margin-top: 5px; min-height: 14px; }
+
+/* ── YouTube：映像エリア ── */
+.yt-area {
+  flex: 1; min-height: 0;
+  position: relative; background: #000; overflow: hidden;
+}
+#yt-player { width: 100%; height: 100%; }
+#yt-player iframe { width: 100% !important; height: 100% !important; }
+
+.yt-ph {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  background: #080808;
+}
+.yt-ph.gone { display: none; }
+.yt-ph-icon { font-size: 32px; opacity: 0.45; }
+.yt-ph-text { font-size: 12px; color: var(--dim); text-align: center; line-height: 1.6; }
+
+/* ── YouTube：プログレスバー ── */
+.yt-progress {
+  height: 38px; flex-shrink: 0;
+  background: var(--ctrl); border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+}
+.tlabel {
+  font-size: 11px; font-variant-numeric: tabular-nums;
+  color: var(--dim); white-space: nowrap;
+}
+.prog-track {
+  flex: 1; height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px; cursor: pointer; position: relative;
+}
+.prog-region {
+  position: absolute; top: 0; height: 100%;
+  background: rgba(255,59,48,0.28); border-radius: 2px; pointer-events: none;
+}
+.prog-fill {
+  position: absolute; top: 0; left: 0; height: 100%;
+  background: var(--red); border-radius: 2px; pointer-events: none; width: 0%;
+}
+.ab-badge {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
+  color: var(--dim); white-space: nowrap;
+}
+.ab-badge.on { color: var(--red); }
+
+/* ── カメラ：映像エリア ── */
+.cam-area {
+  flex: 1; min-height: 0;
+  position: relative; background: #000; overflow: hidden;
+}
+#liveVideo {
+  position: absolute; width: 1px; height: 1px;
+  opacity: 0; pointer-events: none;
+}
+#cam-canvas { display: block; width: 100%; height: 100%; }
+
+.cam-ov {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+  background: rgba(0,0,0,0.88); z-index: 5;
+}
+.cam-ov.gone { display: none; }
+.cam-start {
+  padding: 11px 30px; background: var(--green); border: none;
+  border-radius: 100px; color: #000; font-size: 15px; font-weight: 700;
+  font-family: inherit; cursor: pointer;
+}
+.cam-ov-sub { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.6; }
+.cam-err { color: #ff7070; font-size: 11px; }
+
+.delay-ov {
+  position: absolute; top: 8px; left: 8px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  padding: 4px 10px; border-radius: 100px;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
+  display: none; align-items: center; gap: 5px; z-index: 4;
+}
+.delay-ov.show { display: flex; }
+.delay-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--red); animation: pulse 1.5s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* ── カメラ：遅延スライダー ── */
+.delay-bar {
+  height: 38px; flex-shrink: 0;
+  background: var(--ctrl); border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px; padding: 0 12px;
+}
+.delay-bar-lbl {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--dim); white-space: nowrap;
+}
+input[type=range] {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 20px; height: 20px;
+  background: #fff; border-radius: 50%; cursor: pointer;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+input[type=range]::-moz-range-thumb {
+  width: 20px; height: 20px; background: #fff; border-radius: 50%;
+  cursor: pointer; border: none; box-shadow: 0 1px 6px rgba(0,0,0,0.5);
+}
+.delay-val {
+  font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: #fff; min-width: 28px; text-align: right;
+}
+
+/* ── 縦向き強制（横回転時の注意表示） ── */
+.rotate-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 999;
+  background: #000;
+  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+}
+.rotate-notice-icon { font-size: 48px; }
+.rotate-notice-text { font-size: 15px; color: var(--dim); text-align: center; line-height: 1.6; }
+@media (orientation: landscape) {
+  .rotate-notice { display: flex; }
+}
+</style>
+</head>
+<body>
+
+<!-- 横向きにしたときの注意 -->
+<div class="rotate-notice">
+  <div class="rotate-notice-icon">📱</div>
+  <div class="rotate-notice-text">縦向きにしてください<br>This app is portrait-only</div>
+</div>
+
+<div class="app">
+
+  <!-- ══════════════════════════════
+       上パネル：YouTube 見本
+       ══════════════════════════════ -->
+  <div class="panel">
+
+    <!-- ヘッダー -->
+    <div class="hbar">
+      <span class="hbar-title">📺 見本</span>
+      <button class="hbtn" id="yt-set-btn" onclick="toggleYTDrawer()">URL 設定</button>
+      <button class="hbtn" id="loop-btn"   onclick="toggleLoop()">AB リピート</button>
+    </div>
+
+    <!-- 設定ドロワー -->
+    <div class="yt-drawer" id="yt-drawer">
+      <div class="url-row">
+        <input type="text" id="url-input" placeholder="YouTube URL または 動画ID" />
+        <button class="url-load" onclick="loadVideo()">読込</button>
+      </div>
+      <div class="ab-row">
+        <span class="ab-tag">A</span>
+        <input type="text" class="ab-input" id="start-time" value="0:00" placeholder="0:00" />
+        <span class="ab-sep">→</span>
+        <input type="text" class="ab-input" id="end-time" placeholder="終端" />
+        <span class="ab-tag">B</span>
+      </div>
+      <div class="err" id="yt-err"></div>
+    </div>
+
+    <!-- 映像エリア -->
+    <div class="yt-area">
+      <div id="yt-player"></div>
+      <div class="yt-ph" id="yt-ph">
+        <div class="yt-ph-icon">▶</div>
+        <div class="yt-ph-text">「URL 設定」をタップして<br>YouTube の動画を読み込む</div>
+      </div>
+    </div>
+
+    <!-- プログレスバー -->
+    <div class="yt-progress">
+      <span class="tlabel" id="cur-time">0:00</span>
+      <div class="prog-track" id="prog-track" onclick="seekByClick(event)">
+        <div class="prog-region" id="prog-region"></div>
+        <div class="prog-fill"   id="prog-fill"></div>
+      </div>
+      <span class="tlabel" id="dur-label">--:--</span>
+      <span class="ab-badge" id="ab-badge">AB</span>
+    </div>
+
+  </div><!-- /panel top -->
+
+  <!-- ══════════════════════════════
+       下パネル：遅延ミラー 稽古
+       ══════════════════════════════ -->
+  <div class="panel">
+
+    <!-- ヘッダー -->
+    <div class="hbar">
+      <span class="hbar-title">🪞 稽古</span>
+      <button class="hbtn" id="mirror-btn" onclick="toggleMirror()">反転</button>
+      <button class="hbtn"                 onclick="switchCamera()">カメラ切替</button>
+      <button class="hbtn go"  id="cam-btn" onclick="toggleCamera()">● 開始</button>
+    </div>
+
+    <!-- カメラ映像 -->
+    <div class="cam-area">
+      <video id="liveVideo" autoplay playsinline muted></video>
+      <canvas id="cam-canvas"></canvas>
+
+      <!-- 起動前オーバーレイ -->
+      <div class="cam-ov" id="cam-ov">
+        <button class="cam-start" onclick="toggleCamera()">カメラ開始</button>
+        <div class="cam-ov-sub">遅延再生で自分のフォームをチェック</div>
+        <div class="cam-err" id="cam-err"></div>
+      </div>
+
+      <!-- 遅延バッジ -->
+      <div class="delay-ov" id="delay-ov">
+        <span class="delay-dot"></span>
+        <span id="delay-ov-txt">10s 遅延</span>
+      </div>
+    </div>
+
+    <!-- 遅延スライダー -->
+    <div class="delay-bar">
+      <span class="delay-bar-lbl">遅延</span>
+      <input type="range" id="delay-slider" min="2" max="30" step="1" value="10" />
+      <span class="delay-val" id="delay-val">10s</span>
+    </div>
+
+  </div><!-- /panel bottom -->
+
+</div><!-- /app -->
+
+<!-- ══════════════════════════════════════════════
+     JavaScript
+     ══════════════════════════════════════════════ -->
+<script>
+/* ─── YouTube IFrame API ─── */
+(function(){
+  var s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+
+var ytPlayer, ytTimer;
+var ytDuration  = 0;
+var ytLooping   = false;
+var ytDrawerOpen = false;
+
+function onYouTubeIframeAPIReady() { /* ready */ }
+
+/* 動画ID抽出 */
+function extractId(raw) {
+  raw = (raw || '').trim();
+  var ps = [
+    /[?&]v=([a-zA-Z0-9_-]{11})/,
+    /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+    /embed\/([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/
+  ];
+  for (var i = 0; i < ps.length; i++) {
+    var m = raw.match(ps[i]);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+/* 設定ドロワーの開閉 */
+function toggleYTDrawer() {
+  ytDrawerOpen = !ytDrawerOpen;
+  document.getElementById('yt-drawer').classList.toggle('open', ytDrawerOpen);
+  document.getElementById('yt-set-btn').classList.toggle('active', ytDrawerOpen);
+}
+
+/* 動画読み込み */
+function loadVideo() {
+  var vid = extractId(document.getElementById('url-input').value);
+  var errEl = document.getElementById('yt-err');
+  if (!vid) { errEl.textContent = '有効なURLまたは動画IDを入力してください'; return; }
+  errEl.textContent = '';
+  document.getElementById('yt-ph').classList.add('gone');
+  if (ytPlayer && ytPlayer.loadVideoById) {
+    ytPlayer.loadVideoById(vid);
+  } else {
+    ytPlayer = new YT.Player('yt-player', {
+      videoId: vid,
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1 },
+      events: { onReady: onYTReady, onStateChange: onYTState }
+    });
+  }
+  /* ドロワーを閉じる */
+  ytDrawerOpen = false;
+  document.getElementById('yt-drawer').classList.remove('open');
+  document.getElementById('yt-set-btn').classList.remove('active');
+}
+
+function onYTReady() {
+  ytDuration = ytPlayer.getDuration();
+  if (ytDuration) document.getElementById('dur-label').textContent = fmtTime(ytDuration);
+  startYTMonitor();
+}
+function onYTState(e) {
+  if (e.data === YT.PlayerState.PLAYING)
+    ytDuration = ytPlayer.getDuration() || ytDuration;
+}
+
+/* AB リピート toggle */
+function toggleLoop() {
+  ytLooping = !ytLooping;
+  document.getElementById('loop-btn').classList.toggle('active', ytLooping);
+  document.getElementById('ab-badge').classList.toggle('on',     ytLooping);
+  document.getElementById('ab-badge').textContent = ytLooping ? 'AB ON' : 'AB';
+  if (ytLooping && ytPlayer) {
+    ytPlayer.seekTo(parseTime(document.getElementById('start-time').value), true);
+    ytPlayer.playVideo();
+  }
+  updateRegion();
+}
+
+/* 200ms ごとに監視 */
+function startYTMonitor() {
+  if (ytTimer) clearInterval(ytTimer);
+  ytTimer = setInterval(function() {
+    if (!ytPlayer || !ytPlayer.getCurrentTime) return;
+    var cur = ytPlayer.getCurrentTime();
+    ytDuration = ytPlayer.getDuration() || ytDuration;
+
+    document.getElementById('cur-time').textContent = fmtTime(cur);
+    if (ytDuration) {
+      document.getElementById('prog-fill').style.width = (cur / ytDuration * 100) + '%';
+      document.getElementById('dur-label').textContent = fmtTime(ytDuration);
+    }
+
+    if (ytLooping) {
+      var st = parseTime(document.getElementById('start-time').value);
+      var enRaw = document.getElementById('end-time').value.trim();
+      var en = enRaw ? parseTime(enRaw) : ytDuration;
+      if (!en || en > ytDuration) en = ytDuration;
+      if (st < en && (cur >= en || cur < st - 0.5)) ytPlayer.seekTo(st, true);
+    }
+  }, 200);
+}
+
+/* プログレスバークリックでシーク */
+function seekByClick(e) {
+  if (!ytPlayer || !ytDuration) return;
+  var r = document.getElementById('prog-track').getBoundingClientRect();
+  ytPlayer.seekTo(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * ytDuration, true);
+}
+
+/* AB 区間の色帯を更新 */
+function updateRegion() {
+  if (!ytDuration) return;
+  var st = parseTime(document.getElementById('start-time').value);
+  var enRaw = document.getElementById('end-time').value.trim();
+  var en = enRaw ? parseTime(enRaw) : ytDuration;
+  if (!en || en > ytDuration) en = ytDuration;
+  var reg = document.getElementById('prog-region');
+  reg.style.left  = (st / ytDuration * 100) + '%';
+  reg.style.width = ((en - st) / ytDuration * 100) + '%';
+}
+['start-time', 'end-time'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', updateRegion);
+});
+document.getElementById('url-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') loadVideo();
+});
+
+
+/* ─── 遅延ミラー ─── */
+var camStream   = null;
+var camRunning  = false;
+var capInterval = null;
+var rafId       = null;
+var frameBuf    = [];
+var delaySec    = 10;
+var mirrored    = true;
+var facingMode  = 'user';
+
+var liveVideo  = document.getElementById('liveVideo');
+var camCanvas  = document.getElementById('cam-canvas');
+var camCtx     = camCanvas.getContext('2d');
+var capCanvas  = document.createElement('canvas');
+var capCtx     = capCanvas.getContext('2d');
+var CAPTURE_MS = 80;
+
+/* キャンバスリサイズ */
+function resizeCam() {
+  camCanvas.width  = camCanvas.offsetWidth  || 1;
+  camCanvas.height = camCanvas.offsetHeight || 1;
+}
+window.addEventListener('resize', resizeCam);
+
+/* ミラー反転 toggle */
+function toggleMirror() {
+  mirrored = !mirrored;
+  var btn = document.getElementById('mirror-btn');
+  btn.textContent = mirrored ? '反転' : '反転 OFF';
+  btn.classList.toggle('active', mirrored);
+}
+/* 初期状態 ON */
+document.getElementById('mirror-btn').classList.add('active');
+
+/* カメラ前後切替 */
+function switchCamera() {
+  if (!camRunning) return;
+  facingMode = (facingMode === 'user') ? 'environment' : 'user';
+  stopCamera(); startCamera();
+}
+
+/* 開始 / 停止 toggle */
+function toggleCamera() {
+  camRunning ? stopCamera() : startCamera();
+}
+
+/* カメラ開始 */
+async function startCamera() {
+  document.getElementById('cam-err').textContent = '';
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: facingMode, width: {ideal:1280}, height: {ideal:720} },
+      audio: false
+    });
+    liveVideo.srcObject = camStream;
+    await liveVideo.play();
+
+    frameBuf = [];
+    resizeCam();
+    capInterval = setInterval(captureFrame, CAPTURE_MS);
+    rafId = requestAnimationFrame(drawLoop);
+    camRunning = true;
+
+    document.getElementById('cam-ov').classList.add('gone');
+    document.getElementById('delay-ov').classList.add('show');
+    var btn = document.getElementById('cam-btn');
+    btn.textContent = '■ 停止';
+    btn.className = 'hbtn stop';
+  } catch (err) {
+    var msg = 'カメラを起動できませんでした';
+    if (err.name === 'NotAllowedError') msg = 'カメラの許可が必要です';
+    else if (err.name === 'NotFoundError') msg = 'カメラが見つかりません';
+    document.getElementById('cam-err').textContent = msg;
+  }
+}
+
+/* カメラ停止 */
+function stopCamera() {
+  camRunning = false;
+  if (capInterval) { clearInterval(capInterval); capInterval = null; }
+  if (rafId)       { cancelAnimationFrame(rafId); rafId = null; }
+  if (camStream)   { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  liveVideo.srcObject = null;
+  frameBuf = [];
+  camCtx.clearRect(0, 0, camCanvas.width, camCanvas.height);
+
+  document.getElementById('cam-ov').classList.remove('gone');
+  document.getElementById('delay-ov').classList.remove('show');
+  var btn = document.getElementById('cam-btn');
+  btn.textContent = '● 開始';
+  btn.className = 'hbtn go';
+}
+
+/* フレームをバッファに積む */
+function captureFrame() {
+  if (!camRunning) return;
+  var vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
+  if (!vw || !vh) return;
+
+  var maxDim = 480;
+  if (vw >= vh) {
+    capCanvas.width  = maxDim;
+    capCanvas.height = Math.round(maxDim * vh / vw);
+  } else {
+    capCanvas.width  = Math.round(maxDim * vw / vh);
+    capCanvas.height = maxDim;
+  }
+  capCtx.drawImage(liveVideo, 0, 0, capCanvas.width, capCanvas.height);
+  var img = new Image();
+  img.src = capCanvas.toDataURL('image/jpeg', 0.65);
+  frameBuf.push({ t: Date.now(), img: img });
+
+  /* 不要フレームを削除 */
+  var cutoff = Date.now() - (delaySec + 6) * 1000;
+  while (frameBuf.length && frameBuf[0].t < cutoff) frameBuf.shift();
+}
+
+/* 遅延フレームを描画 */
+function drawLoop() {
+  rafId = requestAnimationFrame(drawLoop);
+  if (!camRunning || !frameBuf.length) return;
+
+  var target = Date.now() - delaySec * 1000;
+  var frame  = frameBuf[0];
+  for (var i = frameBuf.length - 1; i >= 0; i--) {
+    if (frameBuf[i].t <= target) { frame = frameBuf[i]; break; }
+  }
+  if (!frame || !frame.img.complete || !frame.img.naturalWidth) return;
+
+  var cw = camCanvas.width, ch = camCanvas.height;
+  if (!cw || !ch) return;
+  var fw = frame.img.naturalWidth, fh = frame.img.naturalHeight;
+  var scale = Math.min(cw / fw, ch / fh);
+
+  camCtx.clearRect(0, 0, cw, ch);
+  camCtx.save();
+  camCtx.translate(cw / 2, ch / 2);
+  if (mirrored) camCtx.scale(-1, 1);
+  camCtx.drawImage(frame.img, -fw * scale / 2, -fh * scale / 2, fw * scale, fh * scale);
+  camCtx.restore();
+}
+
+/* 遅延スライダー */
+document.getElementById('delay-slider').addEventListener('input', function(e) {
+  delaySec = parseInt(e.target.value);
+  document.getElementById('delay-val').textContent    = delaySec + 's';
+  document.getElementById('delay-ov-txt').textContent = delaySec + 's 遅延';
+});
+
+window.addEventListener('beforeunload', stopCamera);
+
+
+/* ─── ユーティリティ ─── */
+function parseTime(str) {
+  if (!str) return 0;
+  str = str.trim();
+  if (/^\d+(\.\d+)?$/.test(str)) return parseFloat(str);
+  var p = str.split(':').map(Number);
+  if (p.length === 2) return p[0] * 60 + p[1];
+  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+  return 0;
+}
+function fmtTime(sec) {
+  sec = Math.floor(sec || 0);
+  var h = Math.floor(sec / 3600);
+  var m = Math.floor((sec % 3600) / 60);
+  var s = sec % 60;
+  return h > 0
+    ? h + ':' + pad(m) + ':' + pad(s)
+    : m + ':' + pad(s);
+}
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+</script>
+</body>
+</html>
