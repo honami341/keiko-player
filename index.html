@@ -11,8 +11,8 @@
 :root {
   --red:    #ff3b30;
   --green:  #30d158;
-  --border: rgba(255,255,255,0.09);
-  --ctrl:   rgba(14,14,16,0.97);
+  --border: rgba(255,255,255,0.1);
+  --ctrl:   rgba(12,12,14,0.97);
   --dim:    rgba(255,255,255,0.38);
 }
 *, *::before, *::after {
@@ -20,40 +20,62 @@
   -webkit-tap-highlight-color: transparent;
 }
 html, body {
-  height: 100%; height: 100dvh;
+  width: 100%; height: 100%; height: 100dvh;
   background: #000; color: #fff;
   font-family: 'Helvetica Neue', 'Hiragino Sans', system-ui, sans-serif;
   overflow: hidden;
 }
 
-/* ── アプリ全体：縦2分割 ── */
+/* ══════════════════════════════
+   縦向きの場合は回転案内を表示
+   ══════════════════════════════ */
+.portrait-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 999;
+  background: #000;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+}
+.portrait-notice-icon { font-size: 52px; }
+.portrait-notice-text { font-size: 15px; color: var(--dim); text-align: center; line-height: 1.7; }
+@media (orientation: portrait) {
+  .portrait-notice { display: flex; }
+}
+
+/* ══════════════════════════════
+   アプリ本体：横画面・左右2分割
+   ══════════════════════════════ */
 .app {
   display: flex;
-  flex-direction: column;
-  height: 100%; height: 100dvh;
+  flex-direction: row;
+  width: 100%; height: 100%; height: 100dvh;
+  /* iPhone ノッチ対応 */
+  padding-left:  env(safe-area-inset-left,  0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .panel {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
 }
-.panel + .panel { border-top: 2px solid rgba(255,255,255,0.15); }
+.panel + .panel {
+  border-left: 2px solid rgba(255,255,255,0.15);
+}
 
 /* ── ヘッダーバー ── */
 .hbar {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px;
-  height: 36px;
+  gap: 5px;
+  padding: 0 8px;
+  height: 38px;
   background: var(--ctrl);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  z-index: 20;
+  z-index: 10;
 }
 .hbar-title {
   font-size: 10px; font-weight: 700;
@@ -67,95 +89,59 @@ html, body {
   border-radius: 6px;
   color: #fff; font-size: 11px; font-weight: 500;
   font-family: inherit; cursor: pointer;
-  white-space: nowrap; transition: all .15s;
+  white-space: nowrap; transition: background .15s, border-color .15s;
 }
 .hbtn:active { opacity: 0.7; }
 .hbtn.active { background: var(--red); border-color: var(--red); }
 .hbtn.go     { background: var(--green); border-color: var(--green); color: #000; font-weight: 700; }
-.hbtn.stop   { background: #333; border-color: #444; }
+.hbtn.stop   { background: #2a2a2a; border-color: #444; }
 
-/* ── YouTube：設定ドロワー ── */
-.yt-drawer {
-  background: #141416;
-  border-bottom: 1px solid var(--border);
-  padding: 8px 10px 10px;
-  flex-shrink: 0;
-  display: none;
-}
-.yt-drawer.open { display: block; }
-
-.url-row { display: flex; gap: 7px; margin-bottom: 8px; }
-.url-row input {
-  flex: 1; padding: 7px 10px;
-  background: #232325; border: 1px solid #3a3a3d;
-  border-radius: 7px; color: #fff; font-size: 13px; font-family: inherit;
-  outline: none; min-width: 0;
-}
-.url-row input:focus { border-color: var(--red); }
-.url-row input::placeholder { color: #555; }
-.url-load { padding: 7px 14px; background: var(--red); border: none;
-  border-radius: 7px; color: #fff; font-size: 13px; font-weight: 700;
-  font-family: inherit; cursor: pointer; white-space: nowrap; }
-
-.ab-row { display: flex; align-items: center; gap: 7px; }
-.ab-tag { font-size: 9px; font-weight: 800; letter-spacing: 0.15em;
-  text-transform: uppercase; color: var(--dim); }
-.ab-input {
-  width: 60px; padding: 6px 8px;
-  background: #232325; border: 1px solid #3a3a3d;
-  border-radius: 7px; color: #fff; font-size: 13px;
-  text-align: center; font-family: inherit; outline: none;
-}
-.ab-input:focus { border-color: var(--red); }
-.ab-sep { color: var(--dim); font-size: 11px; }
-.err { color: #ff7070; font-size: 11px; margin-top: 5px; min-height: 14px; }
-
-/* ── YouTube：映像エリア ── */
+/* ── YouTube 映像エリア ── */
 .yt-area {
   flex: 1; min-height: 0;
   position: relative; background: #000; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
 }
-#yt-player {
-  width: 100%;
-  max-height: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-}
+#yt-player { width: 100%; height: 100%; }
 #yt-player iframe { width: 100% !important; height: 100% !important; }
 
 .yt-ph {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 8px;
+  align-items: center; justify-content: center; gap: 10px;
   background: #080808;
+  cursor: pointer;
 }
 .yt-ph.gone { display: none; }
-.yt-ph-icon { font-size: 32px; opacity: 0.45; }
+.yt-ph-icon { font-size: 30px; opacity: 0.45; }
 .yt-ph-text { font-size: 12px; color: var(--dim); text-align: center; line-height: 1.6; }
+.yt-ph-hint {
+  padding: 8px 18px; background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border); border-radius: 20px;
+  font-size: 11px; color: #aaa; margin-top: 4px;
+}
 
-/* ── YouTube：プログレスバー ── */
+/* ── YouTube プログレスバー ── */
 .yt-progress {
   height: 38px; flex-shrink: 0;
   background: var(--ctrl); border-top: 1px solid var(--border);
-  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  display: flex; align-items: center; gap: 7px; padding: 0 10px;
 }
 .tlabel {
   font-size: 11px; font-variant-numeric: tabular-nums;
   color: var(--dim); white-space: nowrap;
 }
 .prog-track {
-  flex: 1; height: 4px;
+  flex: 1; height: 5px;
   background: rgba(255,255,255,0.12);
-  border-radius: 2px; cursor: pointer; position: relative;
+  border-radius: 3px; cursor: pointer; position: relative;
 }
 .prog-region {
   position: absolute; top: 0; height: 100%;
-  background: rgba(255,59,48,0.28); border-radius: 2px; pointer-events: none;
+  background: rgba(255,59,48,0.3); border-radius: 3px; pointer-events: none;
 }
 .prog-fill {
   position: absolute; top: 0; left: 0; height: 100%;
-  background: var(--red); border-radius: 2px; pointer-events: none; width: 0%;
+  background: var(--red); border-radius: 3px; pointer-events: none; width: 0%;
 }
 .ab-badge {
   font-size: 10px; font-weight: 800; letter-spacing: 0.08em;
@@ -163,37 +149,30 @@ html, body {
 }
 .ab-badge.on { color: var(--red); }
 
-/* ── カメラ：映像エリア ── */
+/* ── カメラ映像エリア ── */
 .cam-area {
   flex: 1; min-height: 0;
   position: relative; background: #000; overflow: hidden;
-  display: flex; align-items: center; justify-content: center;
 }
 #liveVideo {
   position: absolute; width: 1px; height: 1px;
   opacity: 0; pointer-events: none;
 }
-#cam-canvas {
-  display: block;
-  width: 100%;
-  max-height: 100%;
-  aspect-ratio: 16 / 9;
-  background: #000;
-}
+#cam-canvas { display: block; width: 100%; height: 100%; }
 
 .cam-ov {
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 10px;
-  background: rgba(0,0,0,0.88); z-index: 5;
+  background: rgba(0,0,0,0.9); z-index: 5;
 }
 .cam-ov.gone { display: none; }
 .cam-start {
   padding: 11px 30px; background: var(--green); border: none;
-  border-radius: 100px; color: #000; font-size: 15px; font-weight: 700;
+  border-radius: 100px; color: #000; font-size: 14px; font-weight: 700;
   font-family: inherit; cursor: pointer;
 }
-.cam-ov-sub { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.6; }
+.cam-ov-sub { font-size: 11px; color: var(--dim); text-align: center; }
 .cam-err { color: #ff7070; font-size: 11px; }
 
 .delay-ov {
@@ -211,7 +190,7 @@ html, body {
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
-/* ── カメラ：遅延スライダー ── */
+/* ── 遅延スライダーバー ── */
 .delay-bar {
   height: 38px; flex-shrink: 0;
   background: var(--ctrl); border-top: 1px solid var(--border);
@@ -236,72 +215,121 @@ input[type=range]::-moz-range-thumb {
 }
 .delay-val {
   font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums;
-  color: #fff; min-width: 28px; text-align: right;
+  color: #fff; min-width: 30px; text-align: right;
 }
 
-/* ── 縦向き強制（横回転時の注意表示） ── */
-.rotate-notice {
-  display: none;
-  position: fixed; inset: 0; z-index: 999;
-  background: #000;
-  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+/* ══════════════════════════════
+   URL設定モーダル
+   ══════════════════════════════ */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  display: none; align-items: center; justify-content: center;
 }
-.rotate-notice-icon { font-size: 48px; }
-.rotate-notice-text { font-size: 15px; color: var(--dim); text-align: center; line-height: 1.6; }
-@media (orientation: landscape) {
-  .rotate-notice { display: flex; }
-  .app { display: none; }
+.modal-bg.open { display: flex; }
+.modal-box {
+  background: #1c1c1e;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 16px;
+  padding: 20px;
+  width: min(380px, 90vw);
 }
+.modal-title {
+  font-size: 14px; font-weight: 700; margin-bottom: 14px;
+  color: #fff; letter-spacing: 0.03em;
+}
+.modal-input {
+  width: 100%; padding: 9px 12px;
+  background: #2c2c2e; border: 1px solid #3a3a3c;
+  border-radius: 9px; color: #fff; font-size: 14px; font-family: inherit;
+  outline: none; margin-bottom: 10px;
+}
+.modal-input:focus { border-color: var(--red); }
+.modal-input::placeholder { color: #555; }
+
+.modal-ab {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+}
+.modal-ab-lbl { font-size: 10px; font-weight: 800; color: var(--dim); letter-spacing: 0.12em; }
+.modal-ab-in {
+  width: 70px; padding: 7px 8px;
+  background: #2c2c2e; border: 1px solid #3a3a3c;
+  border-radius: 9px; color: #fff; font-size: 13px;
+  text-align: center; font-family: inherit; outline: none;
+}
+.modal-ab-in:focus { border-color: var(--red); }
+.modal-ab-sep { color: var(--dim); }
+.modal-err { color: #ff7070; font-size: 11px; min-height: 14px; margin-bottom: 10px; }
+
+.modal-btns { display: flex; gap: 8px; }
+.modal-btn {
+  flex: 1; padding: 10px;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: rgba(255,255,255,0.07); color: #fff;
+  font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer;
+}
+.modal-btn.primary {
+  background: var(--red); border-color: var(--red);
+  font-weight: 700;
+}
+.modal-btn:active { opacity: 0.7; }
 </style>
 </head>
 <body>
 
-<!-- 横向きにしたときの注意 -->
-<div class="rotate-notice">
-  <div class="rotate-notice-icon">📱</div>
-  <div class="rotate-notice-text">縦向きにしてください<br>This app is portrait-only</div>
+<!-- ── 縦向き案内 ── -->
+<div class="portrait-notice">
+  <div class="portrait-notice-icon">📱↔️</div>
+  <div class="portrait-notice-text">スマホを横向きにしてください<br>Please rotate to landscape</div>
 </div>
 
+<!-- ══════════════════════════════════════════
+     URL 設定モーダル
+     ══════════════════════════════════════════ -->
+<div class="modal-bg" id="url-modal" onclick="modalBgClick(event)">
+  <div class="modal-box">
+    <div class="modal-title">📺 YouTube 動画を設定</div>
+    <input type="text" class="modal-input" id="url-input"
+      placeholder="YouTube URL または 動画ID" />
+    <div class="modal-ab">
+      <span class="modal-ab-lbl">A</span>
+      <input type="text" class="modal-ab-in" id="start-time" value="0:00" placeholder="0:00" />
+      <span class="modal-ab-sep">→</span>
+      <input type="text" class="modal-ab-in" id="end-time" placeholder="終端 (省略可)" />
+      <span class="modal-ab-lbl">B</span>
+    </div>
+    <div class="modal-err" id="yt-err"></div>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal()">キャンセル</button>
+      <button class="modal-btn primary" onclick="loadVideo()">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     アプリ本体
+     ══════════════════════════════════════════ -->
 <div class="app">
 
-  <!-- ══════════════════════════════
-       上パネル：YouTube 見本
-       ══════════════════════════════ -->
+  <!-- ═══ 左パネル：YouTube 見本 ═══ -->
   <div class="panel">
 
-    <!-- ヘッダー -->
     <div class="hbar">
       <span class="hbar-title">📺 見本</span>
-      <button class="hbtn" id="yt-set-btn" onclick="toggleYTDrawer()">URL 設定</button>
-      <button class="hbtn" id="loop-btn"   onclick="toggleLoop()">AB リピート</button>
+      <button class="hbtn" onclick="openModal()">URL 設定</button>
+      <button class="hbtn" id="loop-btn" onclick="toggleLoop()">AB リピート</button>
     </div>
 
-    <!-- 設定ドロワー -->
-    <div class="yt-drawer" id="yt-drawer">
-      <div class="url-row">
-        <input type="text" id="url-input" placeholder="YouTube URL または 動画ID" />
-        <button class="url-load" onclick="loadVideo()">読込</button>
-      </div>
-      <div class="ab-row">
-        <span class="ab-tag">A</span>
-        <input type="text" class="ab-input" id="start-time" value="0:00" placeholder="0:00" />
-        <span class="ab-sep">→</span>
-        <input type="text" class="ab-input" id="end-time" placeholder="終端" />
-        <span class="ab-tag">B</span>
-      </div>
-      <div class="err" id="yt-err"></div>
-    </div>
-
-    <!-- 映像エリア -->
     <div class="yt-area">
       <div id="yt-player"></div>
-      <div class="yt-ph" id="yt-ph">
+      <div class="yt-ph" id="yt-ph" onclick="openModal()">
         <div class="yt-ph-icon">▶</div>
-        <div class="yt-ph-text">「URL 設定」をタップして<br>YouTube の動画を読み込む</div>
+        <div class="yt-ph-text">見本動画を読み込む</div>
+        <div class="yt-ph-hint">タップして URL を入力</div>
       </div>
     </div>
 
-    <!-- プログレスバー -->
     <div class="yt-progress">
       <span class="tlabel" id="cur-time">0:00</span>
       <div class="prog-track" id="prog-track" onclick="seekByClick(event)">
@@ -312,56 +340,46 @@ input[type=range]::-moz-range-thumb {
       <span class="ab-badge" id="ab-badge">AB</span>
     </div>
 
-  </div><!-- /panel top -->
+  </div><!-- /left panel -->
 
-  <!-- ══════════════════════════════
-       下パネル：遅延ミラー 稽古
-       ══════════════════════════════ -->
+  <!-- ═══ 右パネル：遅延ミラー 稽古 ═══ -->
   <div class="panel">
 
-    <!-- ヘッダー -->
     <div class="hbar">
       <span class="hbar-title">🪞 稽古</span>
       <button class="hbtn" id="mirror-btn" onclick="toggleMirror()">反転</button>
-      <button class="hbtn"                 onclick="switchCamera()">カメラ切替</button>
-      <button class="hbtn go"  id="cam-btn" onclick="toggleCamera()">● 開始</button>
+      <button class="hbtn" onclick="switchCamera()">カメラ切替</button>
+      <button class="hbtn go" id="cam-btn" onclick="toggleCamera()">● 開始</button>
     </div>
 
-    <!-- カメラ映像 -->
     <div class="cam-area">
       <video id="liveVideo" autoplay playsinline muted></video>
       <canvas id="cam-canvas"></canvas>
-
-      <!-- 起動前オーバーレイ -->
       <div class="cam-ov" id="cam-ov">
         <button class="cam-start" onclick="toggleCamera()">カメラ開始</button>
         <div class="cam-ov-sub">遅延再生で自分のフォームをチェック</div>
         <div class="cam-err" id="cam-err"></div>
       </div>
-
-      <!-- 遅延バッジ -->
       <div class="delay-ov" id="delay-ov">
         <span class="delay-dot"></span>
         <span id="delay-ov-txt">10s 遅延</span>
       </div>
     </div>
 
-    <!-- 遅延スライダー -->
     <div class="delay-bar">
       <span class="delay-bar-lbl">遅延</span>
       <input type="range" id="delay-slider" min="2" max="30" step="1" value="10" />
       <span class="delay-val" id="delay-val">10s</span>
     </div>
 
-  </div><!-- /panel bottom -->
+  </div><!-- /right panel -->
 
 </div><!-- /app -->
 
-<!-- ══════════════════════════════════════════════
-     JavaScript
-     ══════════════════════════════════════════════ -->
 <script>
-/* ─── YouTube IFrame API ─── */
+/* ═══════════════════════════════════════════════
+   YouTube IFrame API
+   ═══════════════════════════════════════════════ */
 (function(){
   var s = document.createElement('script');
   s.src = 'https://www.youtube.com/iframe_api';
@@ -369,13 +387,12 @@ input[type=range]::-moz-range-thumb {
 })();
 
 var ytPlayer, ytTimer;
-var ytDuration  = 0;
-var ytLooping   = false;
-var ytDrawerOpen = false;
+var ytDuration = 0;
+var ytLooping  = false;
 
 function onYouTubeIframeAPIReady() { /* ready */ }
 
-/* 動画ID抽出 */
+/* URL → 動画ID */
 function extractId(raw) {
   raw = (raw || '').trim();
   var ps = [
@@ -391,20 +408,27 @@ function extractId(raw) {
   return null;
 }
 
-/* 設定ドロワーの開閉 */
-function toggleYTDrawer() {
-  ytDrawerOpen = !ytDrawerOpen;
-  document.getElementById('yt-drawer').classList.toggle('open', ytDrawerOpen);
-  document.getElementById('yt-set-btn').classList.toggle('active', ytDrawerOpen);
+/* モーダル操作 */
+function openModal() {
+  document.getElementById('url-modal').classList.add('open');
+  setTimeout(function(){ document.getElementById('url-input').focus(); }, 100);
+}
+function closeModal() {
+  document.getElementById('url-modal').classList.remove('open');
+}
+function modalBgClick(e) {
+  if (e.target === document.getElementById('url-modal')) closeModal();
 }
 
 /* 動画読み込み */
 function loadVideo() {
   var vid = extractId(document.getElementById('url-input').value);
   var errEl = document.getElementById('yt-err');
-  if (!vid) { errEl.textContent = '有効なURLまたは動画IDを入力してください'; return; }
+  if (!vid) { errEl.textContent = '有効な URL または動画ID を入力してください'; return; }
   errEl.textContent = '';
   document.getElementById('yt-ph').classList.add('gone');
+  closeModal();
+
   if (ytPlayer && ytPlayer.loadVideoById) {
     ytPlayer.loadVideoById(vid);
   } else {
@@ -414,10 +438,6 @@ function loadVideo() {
       events: { onReady: onYTReady, onStateChange: onYTState }
     });
   }
-  /* ドロワーを閉じる */
-  ytDrawerOpen = false;
-  document.getElementById('yt-drawer').classList.remove('open');
-  document.getElementById('yt-set-btn').classList.remove('active');
 }
 
 function onYTReady() {
@@ -430,12 +450,13 @@ function onYTState(e) {
     ytDuration = ytPlayer.getDuration() || ytDuration;
 }
 
-/* AB リピート toggle */
+/* AB リピート */
 function toggleLoop() {
   ytLooping = !ytLooping;
   document.getElementById('loop-btn').classList.toggle('active', ytLooping);
-  document.getElementById('ab-badge').classList.toggle('on',     ytLooping);
-  document.getElementById('ab-badge').textContent = ytLooping ? 'AB ON' : 'AB';
+  var badge = document.getElementById('ab-badge');
+  badge.textContent = ytLooping ? 'AB ON' : 'AB';
+  badge.classList.toggle('on', ytLooping);
   if (ytLooping && ytPlayer) {
     ytPlayer.seekTo(parseTime(document.getElementById('start-time').value), true);
     ytPlayer.playVideo();
@@ -443,7 +464,7 @@ function toggleLoop() {
   updateRegion();
 }
 
-/* 200ms ごとに監視 */
+/* 200ms ポーリング */
 function startYTMonitor() {
   if (ytTimer) clearInterval(ytTimer);
   ytTimer = setInterval(function() {
@@ -467,14 +488,14 @@ function startYTMonitor() {
   }, 200);
 }
 
-/* プログレスバークリックでシーク */
+/* プログレスバーでシーク */
 function seekByClick(e) {
   if (!ytPlayer || !ytDuration) return;
   var r = document.getElementById('prog-track').getBoundingClientRect();
   ytPlayer.seekTo(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * ytDuration, true);
 }
 
-/* AB 区間の色帯を更新 */
+/* AB 区間帯を更新 */
 function updateRegion() {
   if (!ytDuration) return;
   var st = parseTime(document.getElementById('start-time').value);
@@ -483,7 +504,7 @@ function updateRegion() {
   if (!en || en > ytDuration) en = ytDuration;
   var reg = document.getElementById('prog-region');
   reg.style.left  = (st / ytDuration * 100) + '%';
-  reg.style.width = ((en - st) / ytDuration * 100) + '%';
+  reg.style.width = Math.max(0, (en - st) / ytDuration * 100) + '%';
 }
 ['start-time', 'end-time'].forEach(function(id) {
   document.getElementById(id).addEventListener('input', updateRegion);
@@ -493,7 +514,9 @@ document.getElementById('url-input').addEventListener('keydown', function(e) {
 });
 
 
-/* ─── 遅延ミラー ─── */
+/* ═══════════════════════════════════════════════
+   遅延ミラー
+   ═══════════════════════════════════════════════ */
 var camStream   = null;
 var camRunning  = false;
 var capInterval = null;
@@ -501,31 +524,35 @@ var rafId       = null;
 var frameBuf    = [];
 var delaySec    = 10;
 var mirrored    = true;
-var facingMode  = 'user';
+var facingMode  = 'user';   /* インカメ */
+var CAPTURE_MS  = 80;
 
-var liveVideo  = document.getElementById('liveVideo');
-var camCanvas  = document.getElementById('cam-canvas');
-var camCtx     = camCanvas.getContext('2d');
-var capCanvas  = document.createElement('canvas');
-var capCtx     = capCanvas.getContext('2d');
-var CAPTURE_MS = 80;
+var liveVideo = document.getElementById('liveVideo');
+var camCanvas = document.getElementById('cam-canvas');
+var camCtx    = camCanvas.getContext('2d');
+var capCanvas = document.createElement('canvas');
+var capCtx    = capCanvas.getContext('2d');
 
-/* キャンバスリサイズ */
+/* キャンバスサイズをDOM表示サイズに合わせる */
 function resizeCam() {
-  camCanvas.width  = camCanvas.offsetWidth  || 1;
-  camCanvas.height = camCanvas.offsetHeight || 1;
+  var r = camCanvas.getBoundingClientRect();
+  camCanvas.width  = Math.round(r.width)  || 1;
+  camCanvas.height = Math.round(r.height) || 1;
 }
 window.addEventListener('resize', resizeCam);
+/* 初回リサイズ：DOM確定後に実行 */
+requestAnimationFrame(function(){ requestAnimationFrame(resizeCam); });
 
-/* ミラー反転 toggle */
+/* 反転トグル */
 function toggleMirror() {
   mirrored = !mirrored;
   var btn = document.getElementById('mirror-btn');
-  btn.textContent = mirrored ? '反転' : '反転 OFF';
   btn.classList.toggle('active', mirrored);
+  btn.textContent = mirrored ? '反転 ON' : '反転';
 }
-/* 初期状態 ON */
+/* 初期状態：反転 ON */
 document.getElementById('mirror-btn').classList.add('active');
+document.getElementById('mirror-btn').textContent = '反転 ON';
 
 /* カメラ前後切替 */
 function switchCamera() {
@@ -534,17 +561,22 @@ function switchCamera() {
   stopCamera(); startCamera();
 }
 
-/* 開始 / 停止 toggle */
+/* 開始 / 停止トグル */
 function toggleCamera() {
   camRunning ? stopCamera() : startCamera();
 }
 
-/* カメラ開始 */
+/* カメラ起動 */
 async function startCamera() {
   document.getElementById('cam-err').textContent = '';
   try {
+    /* 横画面インカメ → landscape 優先で要求 */
     camStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: facingMode, width: {ideal:1280}, height: {ideal:720} },
+      video: {
+        facingMode: facingMode,
+        width:  { ideal: 1280 },
+        height: { ideal: 720  }
+      },
       audio: false
     });
     liveVideo.srcObject = camStream;
@@ -586,7 +618,7 @@ function stopCamera() {
   btn.className = 'hbtn go';
 }
 
-/* フレームをバッファに積む */
+/* フレームをバッファに積む（480px相当に縮小してメモリ節約） */
 function captureFrame() {
   if (!camRunning) return;
   var vw = liveVideo.videoWidth, vh = liveVideo.videoHeight;
@@ -601,11 +633,12 @@ function captureFrame() {
     capCanvas.height = maxDim;
   }
   capCtx.drawImage(liveVideo, 0, 0, capCanvas.width, capCanvas.height);
+
   var img = new Image();
   img.src = capCanvas.toDataURL('image/jpeg', 0.65);
   frameBuf.push({ t: Date.now(), img: img });
 
-  /* 不要フレームを削除 */
+  /* 古いフレームを破棄 */
   var cutoff = Date.now() - (delaySec + 6) * 1000;
   while (frameBuf.length && frameBuf[0].t < cutoff) frameBuf.shift();
 }
@@ -625,6 +658,8 @@ function drawLoop() {
   var cw = camCanvas.width, ch = camCanvas.height;
   if (!cw || !ch) return;
   var fw = frame.img.naturalWidth, fh = frame.img.naturalHeight;
+
+  /* キャンバス全体に収まる最大スケール */
   var scale = Math.min(cw / fw, ch / fh);
 
   camCtx.clearRect(0, 0, cw, ch);
@@ -645,7 +680,9 @@ document.getElementById('delay-slider').addEventListener('input', function(e) {
 window.addEventListener('beforeunload', stopCamera);
 
 
-/* ─── ユーティリティ ─── */
+/* ═══════════════════════════════════════════════
+   ユーティリティ
+   ═══════════════════════════════════════════════ */
 function parseTime(str) {
   if (!str) return 0;
   str = str.trim();
@@ -660,9 +697,7 @@ function fmtTime(sec) {
   var h = Math.floor(sec / 3600);
   var m = Math.floor((sec % 3600) / 60);
   var s = sec % 60;
-  return h > 0
-    ? h + ':' + pad(m) + ':' + pad(s)
-    : m + ':' + pad(s);
+  return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : m + ':' + pad(s);
 }
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 </script>
