@@ -114,8 +114,14 @@ html, body {
 .yt-area {
   flex: 1; min-height: 0;
   position: relative; background: #000; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
-#yt-player { width: 100%; height: 100%; }
+#yt-player {
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
 #yt-player iframe { width: 100% !important; height: 100% !important; }
 
 .yt-ph {
@@ -161,12 +167,19 @@ html, body {
 .cam-area {
   flex: 1; min-height: 0;
   position: relative; background: #000; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
 }
 #liveVideo {
   position: absolute; width: 1px; height: 1px;
   opacity: 0; pointer-events: none;
 }
-#cam-canvas { display: block; width: 100%; height: 100%; }
+#cam-canvas {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
 
 .cam-ov {
   position: absolute; inset: 0;
@@ -237,6 +250,7 @@ input[type=range]::-moz-range-thumb {
 .rotate-notice-text { font-size: 15px; color: var(--dim); text-align: center; line-height: 1.6; }
 @media (orientation: landscape) {
   .rotate-notice { display: flex; }
+  .app { display: none; }
 }
 </style>
 </head>
